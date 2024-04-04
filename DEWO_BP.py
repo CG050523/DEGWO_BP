@@ -1,13 +1,13 @@
 import pandas as pd  
 import numpy as np
-import myDE_wolf as DEW
+import degw as DEW
 
 import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Dense
   
 # 读取Excel文件  
-df = pd.read_excel(r'', engine='openpyxl')  
+df = pd.read_excel('/home/lai/文档/创新训练/data/HF08_residual.xlsx', engine='openpyxl')  
   
 # 提取位移数据（第二列，第二行至第六十九行）  
 displacement_data = df.iloc[1:68, 1].values  
@@ -38,41 +38,27 @@ model.add(Dense(1))
 model.compile(loss='mean_squared_error', optimizer='adam')
 
 # 训练模型
-model.fit(train_factors, train_displacement, epochs=1000, batch_size=1)
-
-# 使用训练好的模型进行预测
-predictions = model.predict(test_factors)
-
-# 打印预测结果
-print(predictions)
-
-# 定义适应度函数
-def fitness_function(params):
-    # 将参数转换为影响因子矩阵
-    factors = np.array([params]).T
-    # 使用BP神经网络进行预测
-    predictions = model.predict(factors)
-    # 计算预测误差
-    error = np.mean((predictions - test_displacement) ** 2)
-    return error
+model.fit(train_factors, train_displacement, epochs=300, batch_size=1)
 
 # 设置参数
 dim = 10
 pop_size = 50
-max_iter = 1000
+max_iter = 300
 lb = -10
 ub = 10
-diff_grey_wolf =DEW.DIFFGreyWolf(model, dim, pop_size, max_iter, lb, ub)
-# 运行
-[best_x, best_fv] = diff_grey_wolf.run()
 
-# 打印最优参数和最优适应度值
-print("Best parameters:", best_x)
-print("Best fitness:", best_fv)
+best_solution = None
+# 访问权重矩阵
+for layer in model.layers:
+    weights = layer.get_weights()
+    best_solution = DEW.de_gwo(np.array(train_factors).reshape(1, -1),np.array(train_displacement).reshape(1, -1),np.array(weights).reshape(1, -1),pop_size,max_iter,0.5,0.5,0.5)
+    predictions = model.predict(best_solution.reshape(1, -1))
 
-# 预测结果
-predictions = model.predict(best_x.reshape(1, -1))
-print("Predictions:", predictions)
+# 使用训练好的模型进行预测
+# predictions = model.predict(test_factors)
+
+# 打印预测结果
+print("Predictions:", predictions) 
 
 # 保存模型
 model.save('bp_model.h5')
@@ -84,41 +70,4 @@ loaded_model = tf.keras.models.load_model('bp_model.h5')
 new_predictions = loaded_model.predict(test_factors)
 
 # 打印预测结果
-print("New predictions:", new_predictions)
-
-# 保存预测结果
-np.savetxt(r'C:\Users\邵国龙\Desktop\data-dachuang\predictions.txt', new_predictions, delimiter=',')
-
-# 加载预测结果
-loaded_predictions = np.loadtxt('predictions.txt', delimiter=',')
-
-# 打印加载的预测结果
-print("Loaded predictions:", loaded_predictions)
-
-# 计算预测误差
-error = np.mean((loaded_predictions - test_displacement) ** 2)
-print("Error:", error)
-
-# 保存预测误差
-np.savetxt(r'C:\Users\邵国龙\Desktop\data-dachuang\error.txt', error, delimiter=',')
-
-# 加载预测误差
-loaded_error = np.loadtxt('error.txt', delimiter=',')
-
-# 打印加载的预测误差
-print("Loaded error:", loaded_error)
-
-# 绘制预测结果和实际结果的对比图
-import matplotlib.pyplot as plt
-
-plt.plot(test_displacement, label='Actual')
-plt.plot(loaded_predictions, label='Predicted')
-plt.legend()
-plt.show()
-
-# 绘制预测误差和适应度值的对比图
-plt.plot(best_fv, label='Fitness')
-plt.plot(loaded_error, label='Error')
-plt.legend()
-plt.show()
-
+print("New predictions:\n", new_predictions)
