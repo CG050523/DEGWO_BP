@@ -1,51 +1,79 @@
-import numpy as np
+import random
+from scipy.optimize import rastrigin
 
-def objective_function(inputs, targets, params):
-    # 定义目标函数，这里以均方误差（MSE）作为损失函数
-    mse = 0
-    for i in range(len(params)):
-        output = np.dot(inputs[i], params)
-        mse += (targets[i] - output) ** 2
-    return mse / len(targets)
 
-def de_gwo(inputs, targets, weights, population_size, max_iterations, alpha, beta, gamma):
-    # 初始化种群
-    population = np.random.rand(population_size, inputs.shape[1])
+population_size = 20
+iterations_max = 500
+crossover_pro = 0.2
+# 定义搜索空间
+search_space_x = (-5, 5)
+scaling_factor = 0.2
 
-    # 初始化最佳解和最佳适应度值
-    best_solution = None
-    best_fitness = np.inf
+population = []
+for _ in range(population_size):
+    x = random.uniform(search_space_x[0], search_space_x[1])
+    population.append([x])
 
-    for i in range(max_iterations):
-        # 计算种群适应度值
-        fitness_values = np.array([objective_function(inputs, targets, weights)])
+a = 2
+A = 2 * a * random.random() - a
+C = 2 * random.random()
+decrease = 2/iterations_max
 
-        # 更新最佳解和最佳适应度值
-        best_index = np.argmin(fitness_values)
-        if fitness_values[best_index] < best_fitness:
-            best_fitness = fitness_values[best_index]
-            best_solution = population[best_index]
+def mutate(a,A,C):
+    return a + scaling_factor * (A - C)
 
-        # 差分进化操作
-        a = alpha * np.random.rand(population_size, inputs.shape[1])
-        b = beta * np.random.rand(population_size, inputs.shape[1])
-        c = gamma * np.random.rand(population_size, inputs.shape[1])
+def loss_fuc(x):
+    return rastrigin(x)
 
-        for j in range(population_size):
-            for k in range(inputs.shape[1]):
-                population[j][k] = a[j][k] * best_solution[k] + b[j][k] * population[j][k] + c[j][k] * (np.random.rand() * (population[j][k] - population[int(np.random.rand() * (population_size - 1))][k]))
+def select_fuc(population, loss_fuc):
+    for i in range(population):
+        if population[i] < loss_fuc(mutate(a,A,C)):
+            population[i] = population[i]
+        if population[i]>= loss_fuc(mutate(a,A,C)):
+            population[i] = mutate(a,A,C)
+    return population
 
-    return best_solution
+def dis_calc(population):
+    for i in (3, population):
+        individual = population[i]
+        D_alpha = abs(C * X_alpha - individual)
+        D_beta = abs(C * X_beta - individual)
+        D_gamma = abs(C * X_beta - individual)
+        X_1 = X_alpha - A * D_alpha
+        X_2 = X_beta - A * D_beta
+        X_3 = X_gamma - A * D_gamma
+        individual = (X_1 + X_2 + X_3) / 3
+        population[i] = individual
+    return population
 
-# 示例：使用DE-GWO算法优化BP神经网络权重矩阵
-# inputs = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-# targets = np.array([[0], [1], [1], [0]])
-# population_size = 50
-# max_iterations = 100
-# alpha = 0.5
-# beta = 0.5
-# gamma = 0.5
+population = select_fuc(population, loss_fuc)
 
-# best_weights = de_gwo(inputs, targets, population_size, max_iterations, alpha, beta, gamma)
-# print("Best Weights:", best_weights)
-# print("Best Fitness value:", objective_function(best_weights))
+t = 1
+for t in range(iterations_max):
+    objective_values = [loss_fuc(x) for x in population]
+    sorted_indexes = sorted(range(len(objective_values)), key=lambda i : objective_values[i])
+    sorted_population = [population[i] for i in sorted_indexes]
+    best_individuals = sorted_population[:3]
+    X_alpha = best_individuals[0]
+    X_beta = best_individuals[1]
+    X_gamma = best_individuals[2]
+    for i in (3, population):
+        individual = population[i]
+        D_alpha = abs(C * X_alpha - individual)
+        D_beta = abs(C * X_beta - individual)
+        D_gamma = abs(C * X_beta - individual)
+        X_1 = X_alpha - A * D_alpha
+        X_2 = X_beta - A * D_beta
+        X_3 = X_gamma - A * D_gamma
+        individual = (X_1 + X_2 + X_3) / 3
+        population[i] = individual
+    a = a - t * decrease
+    A = 2 * a * random.random() - a
+    C = 2 * random.random()
+    for j in range(population):
+        if random.random() <= crossover_pro | j  == random.randint(1,population_size):
+            population[j] = mutate(a, A, C)
+        if random.random() > crossover_pro | i!=random.randint(1,population_size):
+            population[j] = population[j]
+    population =  select_fuc(population, loss_fuc)
+
