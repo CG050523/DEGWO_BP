@@ -57,8 +57,8 @@ for t in range(iterations_max):
     X_alpha = best_individuals[0]
     X_beta = best_individuals[1]
     X_gamma = best_individuals[2]
-    for i in (3, population):
-        individual = population[i]
+    for i in (3, sorted_population):
+        individual = sorted_population[i]
         D_alpha = abs(C * X_alpha - individual)
         D_beta = abs(C * X_beta - individual)
         D_gamma = abs(C * X_beta - individual)
@@ -66,14 +66,16 @@ for t in range(iterations_max):
         X_2 = X_beta - A * D_beta
         X_3 = X_gamma - A * D_gamma
         individual = (X_1 + X_2 + X_3) / 3
-        population[i] = individual
+        sorted_population[i] = individual
+    population = sorted_population
     a = a - t * decrease
     A = 2 * a * random.random() - a
     C = 2 * random.random()
     for j in range(population):
         if random.random() <= crossover_pro | j  == random.randint(1,population_size):
             population[j] = mutate(a, A, C)
-        if random.random() > crossover_pro | i!=random.randint(1,population_size):
+        if random.random() > crossover_pro | j !=random.randint(1,population_size):
             population[j] = population[j]
-    population =  select_fuc(population, loss_fuc)
+    population = select_fuc(population, loss_fuc)
 
+print(population)
