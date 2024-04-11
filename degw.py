@@ -61,6 +61,7 @@ for t in range(iterations_max):
     X_alpha = best_individuals[0]
     X_beta = best_individuals[1]
     X_gamma = best_individuals[2]
+    # fourth_item_onwards = sorted_population[3:]
     for i in np.arange(3, len(sorted_population)):
         D_alpha = abs(C * X_alpha - sorted_population[i])
         D_beta = abs(C * X_beta - sorted_population[i])
@@ -74,8 +75,9 @@ for t in range(iterations_max):
     A = 2 * a * random.random() - a
     C = 2 * random.random()
     population = crossover(population)
+    # population = select_fuc(population, loss_fuc)
     population = update(population)
-    result[t]  = population[0]
+    result[t]  = loss_fuc(population[0])
 
 plt.figure()
 plt.plot(result)
