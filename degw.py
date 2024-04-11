@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 population_size = 20
-iterations_max = 5000
-crossover_pro = 0.2
+iterations_max = 300
+crossover_pro = 0.5
 # 定义搜索空间
 search_space_x = (-5, 5)
 scaling_factor = 0.2
@@ -19,28 +19,27 @@ population = np.array(population)
 a = 2
 A = 2 * a * random.random() - a
 C = 2 * random.random()
-decrease = 2/iterations_max
+decrease = 2 / iterations_max
 
 def rastrigin(x):
     const = 10
     return const * np.sum(np.square(x) - const * np.cos(2 * np.pi * x))
 
-def mutate(a,A,C):
+def mutate(a, A, C):
     return a + scaling_factor * (A - C)
 
 def loss_fuc(x):
     return rastrigin(x)
 
-def select_fuc(population, loss_fuc):
-    for i in range(population_size):
-        if population[i] >= loss_fuc(mutate(a,A,C)):
-            population[i] = mutate(a,A,C)
-    return population
+def select_fuc(population_loc, loss_fuc):
+    if loss_fuc(population_loc) >= loss_fuc(mutate(a, A, C)):
+        population_loc = mutate(a, A,  C)
+    return population_loc
 
 def crossover(population):
     for i in range(population_size):
-        if random.random() <= crossover_pro or i == random.randint(1,population_size):
-            population[i] = mutate(a,A,C)
+        if random.random() <= crossover_pro or i == random.randint(1, population_size):
+            population[i] = select_fuc(population[i], loss_fuc)
     return population
 
 def update(population):
@@ -49,7 +48,8 @@ def update(population):
     sorted_population = [population[i] for i in sorted_indexes]
     return sorted_population
 
-population = select_fuc(population, loss_fuc)
+for i in range(population_size):
+    population[i] = select_fuc(population[i], loss_fuc)
 
 t = 1
 
@@ -61,7 +61,6 @@ for t in range(iterations_max):
     X_alpha = best_individuals[0]
     X_beta = best_individuals[1]
     X_gamma = best_individuals[2]
-    # fourth_item_onwards = sorted_population[3:]
     for i in np.arange(3, len(sorted_population)):
         D_alpha = abs(C * X_alpha - sorted_population[i])
         D_beta = abs(C * X_beta - sorted_population[i])
@@ -75,9 +74,8 @@ for t in range(iterations_max):
     A = 2 * a * random.random() - a
     C = 2 * random.random()
     population = crossover(population)
-    population = select_fuc(population, loss_fuc)
     population = update(population)
-    result[t]  = loss_fuc(population[0])
+    result[t]  = population[0]
 
 plt.figure()
 plt.plot(result)
