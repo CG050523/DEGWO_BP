@@ -2,19 +2,17 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
-population_size = 20
+population_size = 30
 iterations_max = 300
-crossover_pro = 0.5
+crossover_pro = 0.2
 # 定义搜索空间
-search_space_x = (-5, 5)
-scaling_factor = 0.2
+search_space_x = (-5.12, 5.12)
+scaling_factor = 0.3
 
 population = []
 for _ in range(population_size):
     x = random.uniform(search_space_x[0], search_space_x[1])
-    population.append([x])
-
-population = np.array(population)
+    population.append(x)
 
 a = 2
 A = 2 * a * random.random() - a
@@ -23,7 +21,7 @@ decrease = 2 / iterations_max
 
 def rastrigin(x):
     const = 10
-    return const * np.sum(np.square(x) - const * np.cos(2 * np.pi * x))
+    return np.square(x) - const * A * np.cos(2 * np.pi * x)
 
 def mutate(a, A, C):
     return a + scaling_factor * (A - C)
@@ -53,6 +51,7 @@ for i in range(population_size):
 
 t = 1
 
+loc = [None] * iterations_max
 result = [None] * iterations_max
 
 for t in range(iterations_max):
@@ -61,7 +60,6 @@ for t in range(iterations_max):
     X_alpha = best_individuals[0]
     X_beta = best_individuals[1]
     X_gamma = best_individuals[2]
-    # fourth_item_onwards = sorted_population[3:]
     for i in np.arange(3, len(sorted_population)):
         D_alpha = abs(C * X_alpha - sorted_population[i])
         D_beta = abs(C * X_beta - sorted_population[i])
@@ -75,10 +73,13 @@ for t in range(iterations_max):
     A = 2 * a * random.random() - a
     C = 2 * random.random()
     population = crossover(population)
-    # population = select_fuc(population, loss_fuc)
     population = update(population)
-    result[t]  = loss_fuc(population[0])
+    loc[t]  = population[0]
+    result[t] = loss_fuc(population[0])
+    # print(population[0])
 
+plt.figure()
+plt.plot(loc)
 plt.figure()
 plt.plot(result)
 plt.show()
