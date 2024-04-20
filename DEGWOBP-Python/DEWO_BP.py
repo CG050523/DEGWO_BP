@@ -26,13 +26,13 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 def sigmoid_derivative(x):
-    return x * (1 - x)
+    return x * sigmoid(x) * (1 - sigmoid(x))
 
 # 初始化权重和偏置
-W1 = np.random.rand(5, 10)
-b1 = np.random.rand(10)
-W2 = np.random.rand(10, 2)
-b2 = np.random.rand(2)
+W1 = np.random.rand(5, 6)
+b1 = np.random.rand(6)
+W2 = np.random.rand(6, 1)
+b2 = np.random.rand(1)
 
 learning_rate = 0.01
 
@@ -40,15 +40,10 @@ learning_rate = 0.01
 def calculate_loss(y, y_pred):
     return np.square(y - y_pred)
 
-# 训练模型
-def train_model(x, y, epochs, learning_rate):
-    for epoch in range(epochs):
-        y_pred = forward_propagation(x)
-
 # 初始化种群
 population_size = 30
 # 最大迭代次数
-iterations_max = 500
+iterations_max = 10
 # 交叉概率
 crossover_pro = 0.2
 # 搜索边界 (bounds)
@@ -58,12 +53,13 @@ scaling_ = 0.6
 scaling_factor = 0.4
 
 inputnum = 5
-hiddennum = 10
-outputnum = 2
+hiddennum = 6
+outputnum = 1
 # 维度数量
 dims = inputnum * hiddennum + hiddennum + hiddennum * outputnum + outputnum
 # 权重（链表）之后通过reshape转成矩阵
-weight = [None] * dims
+# weight = [None] * dims
+weight = [np.random.random()] * dims
 
 # 种群位置初始化
 population = []
@@ -79,7 +75,7 @@ decrease = 2 / iterations_max
 
 # 计算损失
 def calculate_loss(y, y_pred):
-    return np.square(y - y_pred)
+    return sum(np.square(y - y_pred))
 
 # 前向传播
 def forward_propagation(x, W_in_hide, b1, W_hide_out, b2):
@@ -105,7 +101,7 @@ def select_fuc(weight):
         return weight
     else:
         for i in range(dims):
-            weight[i] = update(crossover(population))[0]
+            weight[i] = update(i, crossover(population))[0]
         return weight
 
 # 交叉
@@ -117,9 +113,13 @@ def crossover(population):
     return population
 
 # 更新
-def update(population):
-    y_pred = forward_propagation(x=X_train, W_in_hide=W1, b1=b1, W_hide_out=W2, b2=b2)
-    objective_values = [calculate_loss(y, y_pred) for y in y_test]
+def update(index, population):
+    objective_values = [0] * population_size
+    for i in range(population_size):
+        weight[index] = population[i]
+        W1, b1, W2, b2 = wi.func_weight(weight, inputnum, hiddennum, outputnum)
+        y_pred = forward_propagation(x=X_train, W_in_hide=W1, b1=b1, W_hide_out=W2, b2=b2)
+        objective_values[i] = sum([calculate_loss(y, y_pred) for y in y_train])
     sorted_indexes = sorted(range(len(objective_values)), key = lambda i : objective_values[i])
     sorted_population = [population[i] for i in sorted_indexes]
     return sorted_population
@@ -128,7 +128,7 @@ def DEWO_OPT(weight):
     weight = select_fuc(weight)
     return weight
 
-weight = DEWO_OPT(population)
+weight = DEWO_OPT(weight)
 
 t = 1
 
@@ -138,7 +138,7 @@ scaling_factor = scaling_ * (iterations_max - (t - 1)) / iterations_max + 0.2
 
 for t in range(iterations_max):
     for i in range(dims):
-        sorted_population = update(population)
+        sorted_population = update(i, population)
         best_individual = sorted_population[:3]
         X_alpha = best_individual[0]
         X_beta = best_individual[1]
@@ -157,7 +157,7 @@ for t in range(iterations_max):
         C = 2 * random.random()
         population = crossover(population)
         scaling_factor = scaling_ * (iterations_max - (t - 1)) / iterations_max + 0.2
-        population = update(population)
+        population = update(i, population)
         weight[i]  = population[0]
     W_in_hide, b1, W_hide_out, b2 = wi.func_weight(weight, inputnum, hiddennum, outputnum)
     y_pred = forward_propagation(x=X_train, W_in_hide=W_in_hide, b1=b1, W_hide_out=W_hide_out, b2=b2)
